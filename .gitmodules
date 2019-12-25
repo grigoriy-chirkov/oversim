@@ -1,0 +1,6 @@
+[submodule "omnetpp"]
+	path = omnetpp
+	url = https://github.com/grigoriy-chirkov/omnetpp.git
+[submodule "inet"]
+	path = inet
+	url = https://github.com/grigoriy-chirkov/inet.git
