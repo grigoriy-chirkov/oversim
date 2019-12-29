@@ -477,6 +477,91 @@ packet DHTdumpResponse extends BaseResponseMessage
 }
 
 
+//
+// Data type for DHT CAPI messages
+//
+// @author Ingmar Baumgart
+//
+class BeehiveDhtDumpEntry
+{
+    OverlayKey key;
+    uint32_t kind;
+    uint32_t id;
+    BinaryValue value;
+    int ttl;
+    NodeHandle ownerNode;
+    bool is_modifiable;
+    bool responsible;
+}
+
+//
+// Message type to store value at the keys root
+//
+// @author Ingmar Baumgart
+//
+packet BeehiveDHTputCAPICall extends BaseCallMessage
+{
+    OverlayKey key; // overlayKey that corresponds with value
+    uint32_t kind = 1; // the kind of the stored data item
+    uint32_t id = 1; // the id to identify multiple date items with same key and kind 
+    BinaryValue value; // value that has to be stored on keys root
+    int ttl; // time to life
+    bool isModifiable; // true, if the data item may be overwritten by other nodes
+}
+
+//
+// Message type to order the value corresponding to the OverlayKey key from the node responsible of key
+//
+// @author Ingmar Baumgart
+//
+packet BeehiveDHTgetCAPICall extends BaseCallMessage
+{
+    OverlayKey key; // corresponding OverlayKey to the requested value
+    uint32_t kind = 1; // the kind of the stored data item
+    uint32_t id = 1; // the id to identify multiple date items with same key and kind 
+}
+
+//
+// Message type to respond to a DHTput request @see DHTput
+//
+// @author Ingmar Baumgart
+//
+packet BeehiveDHTputCAPIResponse extends BaseResponseMessage
+{
+    bool isSuccess;
+}
+
+//
+// Message type to respond to a DHTget request @see DHTget
+//
+// @author Ingmar Baumgart
+//
+packet BeehiveDHTgetCAPIResponse extends BaseResponseMessage
+{
+    BeehiveDhtDumpEntry result[]; 
+    bool isSuccess;
+}
+
+//
+// Request to dump all local DHT records
+//
+// @author Ingmar Baumgart
+//
+packet BeehiveDHTdumpCall extends BaseCallMessage
+{
+}
+
+//
+// Response to a DHTdumpCall
+//
+// @author Ingmar Baumgart
+//
+packet BeehiveDHTdumpResponse extends BaseResponseMessage
+{
+    BeehiveDhtDumpEntry record[]; // array of local dht entries
+}
+
+
 
 //
 // Internal RPC to ask overlay to start a lookup
