@@ -203,6 +203,8 @@ protected:
                               const OverlayKey& key,
                               int numSiblings, bool* err);
 
+    bool isReplicatedHere(const OverlayKey& key);
+
     // see BaseOverlay.h
     int getMaxNumSiblings();
 
@@ -229,6 +231,8 @@ protected:
      * @param call RPC Parameter Message
      */
     virtual void rpcNotify(BeehiveNotifyCall* call);
+
+    virtual void rpcUpdateRouting(BeehiveUpdateRoutingCall* beehiveUpdateRoutingCall);
 
     /**
      * STABILIZE Remote-Procedure-Call
@@ -266,6 +270,10 @@ protected:
                                              double rtt = -1);
 
     virtual bool handleFailedNode(const TransportAddress& failed);
+
+
+    // see BaseOverlay.h
+    bool internalHandleRpcCall(BaseCallMessage* msg);
 
     friend class BeehiveSuccessorList;
     friend class BeehiveFingerTable;

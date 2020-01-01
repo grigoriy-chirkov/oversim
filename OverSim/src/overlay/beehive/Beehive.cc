@@ -410,6 +410,30 @@ void Beehive::handleRpcTimeout(BaseCallMessage* msg,
     RPC_SWITCH_END( )
 }
 
+
+bool Beehive::internalHandleRpcCall(BaseCallMessage* msg)
+{
+    // call rpc stubs
+    RPC_SWITCH_START( msg );
+    RPC_DELEGATE( BeehiveUpdateRouting, rpcUpdateRouting );
+    RPC_SWITCH_END( );
+
+    // if RPC was handled return true, else tell the parent class to handle it
+    return RPC_HANDLED || BaseOverlay::internalHandleRpcCall(msg);
+}
+
+void Beehive::rpcUpdateRouting(BeehiveUpdateRoutingCall* beehiveUpdateRoutingCall) 
+{
+    // probably should have some kind of a set of replicated keys, 
+    // so when we get this request we just add new keys to this set and
+    // remove keys which are deleted
+
+
+    // notify app tier about success
+    // sendRpcResponse();
+}
+
+
 int Beehive::getMaxNumSiblings()
 {
     return successorListSize;
@@ -571,6 +595,12 @@ NodeVector* Beehive::findNode(const OverlayKey& key,
         nextHop->push_back(thisNode);
     }
 
+    // if replicated here, the message is for this node
+    else if (isReplicatedHere(key) /* AND IT DOES NOT MODIFY DATA */) {
+        nextHop = new NodeVector();
+        nextHop->push_back(thisNode);
+    }
+
     // the message is destined for this node
     else if (isSiblingFor(thisNode, key, 1, &err)) {
         nextHop = new NodeVector();
@@ -598,6 +628,12 @@ NodeVector* Beehive::findNode(const OverlayKey& key,
     }
 
     return nextHop;
+}
+
+bool Beehive::isReplicatedHere(const OverlayKey& key)
+{
+
+    return false;
 }
 
 

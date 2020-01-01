@@ -77,6 +77,7 @@ void BeehiveDHT::initializeApp(int stage)
 
     replicate_timer = new cMessage("replicate_timer");
     scheduleAt(simTime() + uniform(0, replicateDelay), replicate_timer);
+//    uniform(0, replicateDelay);
 
     maintenanceMessages = 0;
     normalMessages = 0;
@@ -153,6 +154,14 @@ void BeehiveDHT::handleRpcResponse(BaseResponseMessage* msg, cPolymorphic* conte
         EV << "[BeehiveDHT::handleRpcResponse()]\n"
            << "    Lookup RPC Response received: id=" << rpcId
            << " msg=" << *_LookupResponse << " rtt=" << rtt
+           << endl;
+        break;
+    }
+    RPC_ON_RESPONSE(BeehiveUpdateRouting) {
+        handleUpdateRoutingResponse(_BeehiveUpdateRoutingResponse, rpcId);
+        EV << "[BeehiveDHT::handleRpcResponse()]\n"
+           << "    BeehiveDHT UpdateRouting RPC Response received: id=" << rpcId
+           << " msg=" << *_BeehiveUpdateRoutingResponse << " rtt=" << rtt
            << endl;
         break;
     }
@@ -816,15 +825,32 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
 
 void BeehiveDHT::handleReplicateRequest(BeehiveReplicateCall* replicateRequest) 
 {
+    // request should probably contain already replicated keys, 
+    // need to check paper about it
 
+    // check the storage for new data for requesting node
+    // dataStorage->...
+
+    // send new information about replication in response
+    //sendRpcResponse(replicateRequest, ...);
 }
 
 
 void BeehiveDHT::handleReplicateResponse(BeehiveReplicateResponse* replicateResponse, int rpcId) 
 {
+    // we get new data and keys in response, should put them in storage
+    // dataStorage->addData(...);
 
+    // update routing data
+    // BeehiveUpdateRoutingCall* beehiveUpdateRoutingCall = new BeehiveUpdateRoutingCall();
+    // beehiveUpdateRoutingCall->...
+    // sendInternalRpcCall(OVERLAY_COMP, beehiveUpdateRoutingCall, ...);
 }
 
+void BeehiveDHT::handleUpdateRoutingResponse(BeehiveUpdateRoutingResponse* updateRoutingResponse, int rpcId)
+{
+    // probably nothing...
+}
 
 std::ostream& operator<<(std::ostream& os, const BeehiveDHT::PendingRpcsEntry& entry)
 {

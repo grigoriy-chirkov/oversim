@@ -112,6 +112,7 @@ private:
 
     void handleReplicateResponse(BeehiveReplicateResponse* replicateResponse, int rpcId);
     void handleReplicateRequest(BeehiveReplicateCall* replicateRequest);
+    void handleUpdateRoutingResponse(BeehiveUpdateRoutingResponse* updateRoutingResponse, int rpcId);
 
 
 

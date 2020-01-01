@@ -74,6 +74,11 @@ void DHT::initializeApp(int stage)
                   "overlay can handle (%d)", overlay->getMaxNumSiblings());
     }
 
+
+    // for consistency between dht and beehivedht
+    uniform(0, 1);
+
+
     maintenanceMessages = 0;
     normalMessages = 0;
     numBytesMaintenance = 0;

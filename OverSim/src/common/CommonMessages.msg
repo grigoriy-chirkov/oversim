@@ -502,6 +502,16 @@ packet LookupResponse extends BaseResponseMessage
     NodeHandle siblings[]; // the siblings for the key (closest nodes=
 }
 
+packet BeehiveUpdateRoutingCall extends BaseCallMessage
+{
+
+}
+
+packet BeehiveUpdateRoutingResponse extends BaseResponseMessage
+{
+
+}
+
 //
 // P2PNS Register RPC Call
 //
