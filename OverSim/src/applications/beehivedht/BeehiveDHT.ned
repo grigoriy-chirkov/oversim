@@ -32,9 +32,7 @@ simple BeehiveDHT extends BaseApp
         int numReplica;  // number of replica for stored data records
         int numGetRequests; // number of queried replica for get requests
         double ratioIdentical; // ratio of identical replica needed for a valid result
-        bool secureMaintenance; // use a secure maintenance algorithm based on majority decisions
-        bool invalidDataAttack; // if node is malicious, it tries a invalidData attack
-        bool maintenanceAttack; // if node is malicious, it tries a maintenance attack
+        double replicateDelay; 
 }
 
 //

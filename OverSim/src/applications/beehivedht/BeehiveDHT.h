@@ -89,6 +89,7 @@ private:
     void initializeApp(int stage);
     void finishApp();
     void handleTimerEvent(cMessage* msg);
+    void handleReplicateTimerExpired(cMessage* msg);
 
     bool handleRpcCall(BaseCallMessage* msg);
     void handleRpcResponse(BaseResponseMessage* msg, cPolymorphic *context,
@@ -108,6 +109,12 @@ private:
     void sendMaintenancePutCall(const TransportAddress& dest,
                                 const OverlayKey& key,
                                 const BeehiveDHTDataEntry& entry);
+
+    void handleReplicateResponse(BeehiveReplicateResponse* replicateResponse, int rpcId);
+    void handleReplicateRequest(BeehiveReplicateCall* replicateRequest);
+
+
+
     int resultValuesBitLength(BeehiveDHTGetResponse* msg);
 
     uint numReplica;
@@ -117,16 +124,20 @@ private:
     double normalMessages;
     double numBytesMaintenance;
     double numBytesNormal;
+    double replicateDelay; /**< replicate interval (secs) */
 
-    bool secureMaintenance; /**< use a secure maintenance algorithm based on majority decisions */
-    bool invalidDataAttack; /**< if node is malicious, it tries a invalidData attack */
-    bool maintenanceAttack; /**< if node is malicious, it tries a maintenanceData attack */
+    //stats
+    int replicateCount; /**< */
+    int replicateBytesSent; /**< */
 
     typedef std::map<uint32_t, PendingRpcsEntry> PendingRpcs;
     PendingRpcs pendingRpcs; /**< a map of all pending RPC operations */
 
     // module references
     BeehiveDHTDataStorage* dataStorage; /**< pointer to the BeehiveDHT data storage */
+
+    // timers
+    cMessage* replicate_timer; /**< */
 };
 
 #endif

@@ -90,3 +90,20 @@ message BeehiveDHTTtlTimer
     uint32_t kind;
     uint32_t id;
 }
+
+//
+// Message used for the replication protocol as mentioned in 
+// Beehive
+//
+packet BeehiveReplicateCall extends BaseCallMessage
+{
+
+}
+
+//
+// Message used to answer to a BeehiveStabilizeRequest message
+//
+packet BeehiveReplicateResponse extends BaseResponseMessage
+{
+    
+}

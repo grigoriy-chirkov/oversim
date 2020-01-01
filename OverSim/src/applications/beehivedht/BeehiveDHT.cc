@@ -36,6 +36,7 @@ using namespace std;
 BeehiveDHT::BeehiveDHT()
 {
     dataStorage = NULL;
+    replicate_timer = NULL;
 }
 
 BeehiveDHT::~BeehiveDHT()
@@ -52,6 +53,8 @@ BeehiveDHT::~BeehiveDHT()
     if (dataStorage != NULL) {
         dataStorage->clear();
     }
+
+    cancelAndDelete(replicate_timer);
 }
 
 void BeehiveDHT::initializeApp(int stage)
@@ -65,14 +68,15 @@ void BeehiveDHT::initializeApp(int stage)
     numReplica = par("numReplica");
     numGetRequests = par("numGetRequests");
     ratioIdentical = par("ratioIdentical");
-    secureMaintenance = par("secureMaintenance");
-    invalidDataAttack = par("invalidDataAttack");
-    maintenanceAttack = par("maintenanceAttack");
+    replicateDelay = par("replicateDelay");
 
     if ((int)numReplica > overlay->getMaxNumSiblings()) {
         opp_error("BeehiveDHT::initialize(): numReplica bigger than what this "
                   "overlay can handle (%d)", overlay->getMaxNumSiblings());
     }
+
+    replicate_timer = new cMessage("replicate_timer");
+    scheduleAt(simTime() + uniform(0, replicateDelay), replicate_timer);
 
     maintenanceMessages = 0;
     normalMessages = 0;
@@ -87,6 +91,12 @@ void BeehiveDHT::initializeApp(int stage)
 
 void BeehiveDHT::handleTimerEvent(cMessage* msg)
 {
+
+    if (msg == replicate_timer) {
+        handleReplicateTimerExpired(msg);
+        return;
+    }
+
     BeehiveDHTTtlTimer* msg_timer = dynamic_cast<BeehiveDHTTtlTimer*> (msg);
 
     if (msg_timer) {
@@ -108,6 +118,7 @@ bool BeehiveDHT::handleRpcCall(BaseCallMessage* msg)
         // RPCs between nodes
         RPC_DELEGATE(BeehiveDHTPut, handlePutRequest);
         RPC_DELEGATE(BeehiveDHTGet, handleGetRequest);
+        RPC_DELEGATE(BeehiveReplicate, handleReplicateRequest);
         // internal RPCs
         RPC_DELEGATE(DHTputCAPI, handlePutCAPIRequest);
         RPC_DELEGATE(DHTgetCAPI, handleGetCAPIRequest);
@@ -142,6 +153,14 @@ void BeehiveDHT::handleRpcResponse(BaseResponseMessage* msg, cPolymorphic* conte
         EV << "[BeehiveDHT::handleRpcResponse()]\n"
            << "    Lookup RPC Response received: id=" << rpcId
            << " msg=" << *_LookupResponse << " rtt=" << rtt
+           << endl;
+        break;
+    }
+    RPC_ON_RESPONSE(BeehiveReplicate) {
+        handleReplicateResponse(_BeehiveReplicateResponse, rpcId);
+        EV << "[BeehiveDHT::handleRpcResponse()]\n"
+           << "    BeehiveDHT Replicate RPC Response received: id=" << rpcId
+           << " msg=" << *_BeehiveReplicateResponse << " rtt=" << rtt
            << endl;
         break;
     }
@@ -251,12 +270,7 @@ void BeehiveDHT::handleRpcTimeout(BaseCallMessage* msg, const TransportAddress& 
                     // return a invalid result or return nothing,
                     // we simply return the value with the highest probability
                     it->second.hashVector = hashVector;
-#if 0
-                    if ((double)maxCount/(double)it->second.numResponses >=
-                                                             ratioIdentical) {
-                        it->second.hashVector = hashVector;
-                    }
-#endif
+
                 }
 
                 if ((it->second.hashVector != NULL)
@@ -286,6 +300,21 @@ void BeehiveDHT::handleRpcTimeout(BaseCallMessage* msg, const TransportAddress& 
         }
         break;
     }
+    RPC_ON_CALL(BeehiveReplicate){
+        EV << "[BeehiveDHT::handleRpcResponse()]\n"
+           << "    BeehiveReplicate Timeout"
+           << endl;
+
+        PendingRpcs::iterator it = pendingRpcs.find(rpcId);
+
+        if (it == pendingRpcs.end()) // unknown request
+            return;
+
+        // delete it, it's just replication call
+        pendingRpcs.erase(rpcId);
+
+        break;
+    }
     RPC_SWITCH_END( )
 }
 
@@ -297,95 +326,11 @@ void BeehiveDHT::handlePutRequest(BeehiveDHTPutCall* dhtMsg)
 
     bool err;
     bool isSibling = overlay->isSiblingFor(overlay->getThisNode(),
-                  dhtMsg->getKey(), secureMaintenance ? numReplica : 1, &err);
+                  dhtMsg->getKey(), 1, &err);
     if (err) {
         isSibling = true;
     }
 
-    if (secureMaintenance && dhtMsg->getMaintenance()) {
-        BeehiveDHTDataEntry* entry = dataStorage->getDataEntry(dhtMsg->getKey(),
-                                                        dhtMsg->getKind(),
-                                                        dhtMsg->getId());
-        if (entry == NULL) {
-            // add ttl timer
-            BeehiveDHTTtlTimer *timerMsg = new BeehiveDHTTtlTimer("ttl_timer");
-            timerMsg->setKey(dhtMsg->getKey());
-            timerMsg->setKind(dhtMsg->getKind());
-            timerMsg->setId(dhtMsg->getId());
-            scheduleAt(simTime() + dhtMsg->getTtl(), timerMsg);
-
-            entry = dataStorage->addData(dhtMsg->getKey(), dhtMsg->getKind(),
-                                 dhtMsg->getId(), dhtMsg->getValue(), timerMsg,
-                                 dhtMsg->getIsModifiable(), dhtMsg->getSrcNode(),
-                                 isSibling);
-        } else if ((entry->siblingVote.size() == 0) && isSibling) {
-            // we already have a verified entry with this key and are
-            // still responsible => ignore maintenance calls
-            delete dhtMsg;
-            return;
-        }
-
-        SiblingVoteMap::iterator it = entry->siblingVote.find(dhtMsg->getValue());
-        if (it == entry->siblingVote.end()) {
-            // new hash
-            NodeVector vect;
-            vect.add(dhtMsg->getSrcNode());
-            entry->siblingVote.insert(make_pair(dhtMsg->getValue(),
-                                                vect));
-        } else {
-            it->second.add(dhtMsg->getSrcNode());
-        }
-
-        size_t maxCount = 0;
-        SiblingVoteMap::iterator majorityIt;
-
-        for (it = entry->siblingVote.begin(); it != entry->siblingVote.end(); it++) {
-            if (it->second.size() > maxCount) {
-                maxCount = it->second.size();
-                majorityIt = it;
-            }
-        }
-
-        entry->value = majorityIt->first;
-        entry->responsible = true;
-
-        if (maxCount > numReplica) {
-            entry->siblingVote.clear();
-        }
-
-        // send back
-        BeehiveDHTPutResponse* responseMsg = new BeehiveDHTPutResponse();
-        responseMsg->setSuccess(true);
-        responseMsg->setBitLength(PUTRESPONSE_L(responseMsg));
-        RECORD_STATS(normalMessages++; numBytesNormal += responseMsg->getByteLength());
-
-        sendRpcResponse(dhtMsg, responseMsg);
-
-        return;
-    }
-
-#if 0
-    if (!(dataStorage->isModifiable(dhtMsg->getKey(), dhtMsg->getKind(),
-                                    dhtMsg->getId()))) {
-        // check if the put request came from the right node
-        NodeHandle sourceNode = dataStorage->getSourceNode(dhtMsg->getKey(),
-                                    dhtMsg->getKind(), dhtMsg->getId());
-        if (((!sourceNode.isUnspecified())
-                && (!dhtMsg->getSrcNode().isUnspecified()) && (sourceNode
-                != dhtMsg->getSrcNode())) || ((dhtMsg->getMaintenance())
-                && (dhtMsg->getOwnerNode() == sourceNode))) {
-            // TODO: set owner
-            DHTPutResponse* responseMsg = new DHTPutResponse();
-            responseMsg->setSuccess(false);
-            responseMsg->setBitLength(PUTRESPONSE_L(responseMsg));
-            RECORD_STATS(normalMessages++;
-                         numBytesNormal += responseMsg->getByteLength());
-            sendRpcResponse(dhtMsg, responseMsg);
-            return;
-        }
-
-    }
-#endif
 
     // remove data item from local data storage
     dataStorage->removeData(dhtMsg->getKey(), dhtMsg->getKind(),
@@ -428,18 +373,6 @@ void BeehiveDHT::handleGetRequest(BeehiveDHTGetCall* dhtMsg)
     BeehiveDHTDumpVector* dataVect = dataStorage->dumpDht(dhtMsg->getKey(),
                                                    dhtMsg->getKind(),
                                                    dhtMsg->getId());
-
-    if (overlay->isMalicious() && invalidDataAttack) {
-        dataVect->resize(1);
-        dataVect->at(0).setKey(dhtMsg->getKey());
-        dataVect->at(0).setKind(dhtMsg->getKind());
-        dataVect->at(0).setId(dhtMsg->getId());
-        dataVect->at(0).setValue("Modified Data");
-        dataVect->at(0).setTtl(3600*24*365);
-        dataVect->at(0).setOwnerNode(overlay->getThisNode());
-        dataVect->at(0).setIs_modifiable(false);
-        dataVect->at(0).setResponsible(true);
-    }
 
     // send back
     BeehiveDHTGetResponse* responseMsg = new BeehiveDHTGetResponse();
@@ -542,7 +475,6 @@ void BeehiveDHT::handlePutResponse(BeehiveDHTPutResponse* dhtMsg, int rpcId)
     }
 
 
-//    if ((it->second.numFailed + it->second.numResponses) == it->second.numSent) {
     if (it->second.numResponses / (double)it->second.numSent > 0.5) {
 
         DHTputCAPIResponse* capiPutRespMsg = new DHTputCAPIResponse();
@@ -640,18 +572,6 @@ void BeehiveDHT::handleGetResponse(BeehiveDHTGetResponse* dhtMsg, int rpcId)
                 capiGetRespMsg->setResult(0, result);
                 capiGetRespMsg->setIsSuccess(false);
                 sendRpcResponse(it->second.getCallMsg, capiGetRespMsg);
-#if 0
-                cout << "DHT: GET failed: hash (no one else)" << endl;
-                cout << "numResponses: " << it->second.numResponses
-                     << " numAvailableReplica: " << it->second.numAvailableReplica << endl;
-
-                for (itHashes = it->second.hashes.begin();
-                     itHashes != it->second.hashes.end(); itHashes++) {
-                    cout << "   - " << itHashes->first << " ("
-                         << itHashes->second.size() << ")" << endl;
-                }
-#endif
-
                 pendingRpcs.erase(rpcId);
                 return;
             } else {
@@ -699,49 +619,7 @@ void BeehiveDHT::update(const NodeHandle& node, bool joined)
        << "    Update called()"
        << endl;
 
-    if (secureMaintenance) {
-        for (it = dataStorage->begin(); it != dataStorage->end(); it++) {
-            if (it->second.responsible) {
-                NodeVector* siblings = overlay->local_lookup(it->first,
-                                                             numReplica,
-                                                             false);
-                if (siblings->size() == 0) {
-                    delete siblings;
-                    continue;
-                }
 
-                if (joined) {
-                    EV << "[BeehiveDHT::update() @ " << overlay->getThisNode().getIp()
-                       << " (" << overlay->getThisNode().getKey().toString(16) << ")]\n"
-                       << "    Potential new sibling for record " << it->first
-                       << endl;
-
-                    if (overlay->distance(node.getKey(), it->first) <=
-                        overlay->distance(siblings->back().getKey(), it->first)) {
-
-                        sendMaintenancePutCall(node, it->first, it->second);
-                    }
-
-                    if (overlay->distance(overlay->getThisNode().getKey(), it->first) >
-                        overlay->distance(siblings->back().getKey(), it->first)) {
-
-                        it->second.responsible = false;
-                    }
-                } else {
-                    if (overlay->distance(node.getKey(), it->first) <
-                        overlay->distance(siblings->back().getKey(), it->first)) {
-
-                        sendMaintenancePutCall(siblings->back(), it->first,
-                                               it->second);
-                    }
-                }
-
-                delete siblings;
-            }
-        }
-
-        return;
-    }
 
     for (it = dataStorage->begin(); it != dataStorage->end(); it++) {
         key = it->first;
@@ -784,12 +662,8 @@ void BeehiveDHT::sendMaintenancePutCall(const TransportAddress& node,
     dhtMsg->setKey(key);
     dhtMsg->setKind(entry.kind);
     dhtMsg->setId(entry.id);
+    dhtMsg->setValue(entry.value);
 
-    if (overlay->isMalicious() && maintenanceAttack) {
-        dhtMsg->setValue("Modified Data");
-    } else {
-        dhtMsg->setValue(entry.value);
-    }
 
     dhtMsg->setTtl((int)SIMTIME_DBL(entry.ttlMessage->getArrivalTime()
                                     - simTime()));
@@ -812,15 +686,6 @@ void BeehiveDHT::handleLookupResponse(LookupResponse* lookupMsg, int rpcId)
 
     if (it->second.putCallMsg != NULL) {
 
-#if 0
-        cout << "DHT::handleLookupResponse(): PUT "
-             << lookupMsg->getKey() << " ("
-             << overlay->getThisNode().getKey() << ")" << endl;
-
-        for (unsigned int i = 0; i < lookupMsg->getSiblingsArraySize(); i++) {
-            cout << i << ": " << lookupMsg->getSiblings(i) << endl;
-        }
-#endif
 
         if ((lookupMsg->getIsValid() == false)
                 || (lookupMsg->getSiblingsArraySize() == 0)) {
@@ -866,16 +731,6 @@ void BeehiveDHT::handleLookupResponse(LookupResponse* lookupMsg, int rpcId)
         it->second.numSent = lookupMsg->getSiblingsArraySize();
     }
     else if (it->second.getCallMsg != NULL) {
-
-#if 0
-        cout << "DHT::handleLookupResponse(): GET "
-             << lookupMsg->getKey() << " ("
-             << overlay->getThisNode().getKey() << ")" << endl;
-
-        for (unsigned int i = 0; i < lookupMsg->getSiblingsArraySize(); i++) {
-            cout << i << ": " << lookupMsg->getSiblings(i) << endl;
-        }
-#endif
 
         if ((lookupMsg->getIsValid() == false)
                 || (lookupMsg->getSiblingsArraySize() == 0)) {
@@ -948,6 +803,28 @@ int BeehiveDHT::resultValuesBitLength(BeehiveDHTGetResponse* msg) {
     }
     return bitSize;
 }
+
+void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg) 
+{
+    
+    // send replication request to all possible successors
+
+    // schedule next replication process
+    cancelEvent(replicate_timer);
+    scheduleAt(simTime() + replicateDelay, msg);
+}
+
+void BeehiveDHT::handleReplicateRequest(BeehiveReplicateCall* replicateRequest) 
+{
+
+}
+
+
+void BeehiveDHT::handleReplicateResponse(BeehiveReplicateResponse* replicateResponse, int rpcId) 
+{
+
+}
+
 
 std::ostream& operator<<(std::ostream& os, const BeehiveDHT::PendingRpcsEntry& entry)
 {
