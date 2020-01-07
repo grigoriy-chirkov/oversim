@@ -439,6 +439,11 @@ int Beehive::getMaxNumSiblings()
     return successorListSize;
 }
 
+BeehiveSuccessorList* Beehive::getSuccessorList()
+{
+    return successorList;
+}
+
 int Beehive::getMaxNumRedundantNodes()
 {
     return extendedFingerTable ? numFingerCandidates : 1;
