@@ -826,7 +826,7 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
     // overlay->findFriendModules()
     // successorList->getSuccessor()
     // overlay->getMaxNumSiblings();
-    overlay->successorList;
+    overlay.fingerTable;
 
 
 
