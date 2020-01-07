@@ -208,7 +208,7 @@ protected:
     // see BaseOverlay.h
     int getMaxNumSiblings();
 
-    BeehiveSuccessorList* Beehive::getSuccessorList()
+    BeehiveSuccessorList* getSuccessorList();
 
     // see BaseOverlay.h
     int getMaxNumRedundantNodes();
