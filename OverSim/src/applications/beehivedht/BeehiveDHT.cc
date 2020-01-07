@@ -24,6 +24,7 @@
 #include <IPAddressResolver.h>
 
 #include "BeehiveDHT.h"
+#include <BeehiveSuccessorList.h>
 
 #include <RpcMacros.h>
 #include <BaseRpc.h>
@@ -820,7 +821,9 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
     // (technically, these requests should only be sent to nodes that are the "decidiing nodes" for a given object)
     BeehiveReplicateCall *repmsg = new BeehiveReplicateCall();
 
-    // TODO: get all successor keys 
+    // TODO: get all successor keys
+    successorList = check_and_cast<BeehiveSuccessorList*>
+                    (getParentModule()->getSubmodule("successorList"));
 
 
     // TODO: loop over successor keys
