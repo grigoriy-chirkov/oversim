@@ -822,8 +822,7 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
     BeehiveReplicateCall *repmsg = new BeehiveReplicateCall();
 
     // TODO: get all successor keys
-    successorList = check_and_cast<BeehiveSuccessorList*>
-                    (getParentModule()->getSubmodule("successorList"));
+    successorList = check_and_cast<BeehiveSuccessorList*>(getParentModule()->getSubmodule("successorList"));
 
 
     // TODO: loop over successor keys
