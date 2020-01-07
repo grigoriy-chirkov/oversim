@@ -30,6 +30,8 @@
 #include <BaseRpc.h>
 #include <GlobalStatistics.h>
 
+#include <typeinfo>
+
 Define_Module(BeehiveDHT);
 
 using namespace std;
@@ -821,14 +823,22 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
     // (technically, these requests should only be sent to nodes that are the "decidiing nodes" for a given object)
 
     // TODO: get all successor keys
-    // successorList = check_and_cast<BeehiveSuccessorList*>
-    //                   (getParentModule()->getSubmodule("successorList"));
-    // overlay->findFriendModules()
-    // successorList->getSuccessor()
-    // overlay->getMaxNumSiblings();
-    overlay.fingerTable;
+    // NodeVector* a = overlay->neighborSet(1);
+    // std::cout << overlay->getThisNode().getKey();
 
+    // Get the list of current keys that live at this node
+    BeehiveDHTDumpVector* dumpVector = dataStorage->dumpDht(); // Dumps out all data
+    int numKeysStored = dumpVector->size(); // number of keys stored here
+    vector<string> currData; // list to store keys
+    for (uint32_t i = 0; i < numKeysStored; i++) { // fill up the list
+        string currDataKey = (*dumpVector)[i].getKey().toString();
+        currData.push_back(currDataKey);
+    }
+    // currData now holds all keys at this node. It should be included in the replication request sent to all successors.
 
+    for (int i = 0; i < currData.size(); i++) {
+        std::cout << currData[i];
+    }
 
     // TODO: loop over successor keys
     // for each key in successor list...
