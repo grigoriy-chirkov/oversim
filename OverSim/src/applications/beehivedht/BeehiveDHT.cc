@@ -818,7 +818,7 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
     
     // send replication request to all possible successors 
     // (technically, these requests should only be sent to nodes that are the "decidiing nodes" for a given object)
-    BeehiveReplicateCall *msg = new BeehiveReplicateCall();
+    BeehiveReplicateCall *repmsg = new BeehiveReplicateCall();
 
     // TODO: get all successor keys 
 
@@ -830,7 +830,7 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
 
     // schedule next replication process
     cancelEvent(replicate_timer);
-    scheduleAt(simTime() + replicateDelay, msg);
+    scheduleAt(simTime() + replicateDelay, repmsg);
 }
 
 void BeehiveDHT::handleReplicateRequest(BeehiveReplicateCall* replicateRequest) 
