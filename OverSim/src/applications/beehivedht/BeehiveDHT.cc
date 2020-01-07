@@ -816,7 +816,17 @@ int BeehiveDHT::resultValuesBitLength(BeehiveDHTGetResponse* msg) {
 void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg) 
 {
     
-    // send replication request to all possible successors
+    // send replication request to all possible successors 
+    // (technically, these requests should only be sent to nodes that are the "decidiing nodes" for a given object)
+    BeehiveReplicateCall *msg = new BeehiveReplicateCall();
+
+    // TODO: get all successor keys 
+
+
+    // TODO: loop over successor keys
+    // for each key in successor list...
+        // msg->setDestinationKey(successorKey); // create message
+        // sendRouteRpcCall(OVERLAY_COMP, successorKey, msg); // send rpc to compare replicated keys
 
     // schedule next replication process
     cancelEvent(replicate_timer);
@@ -825,23 +835,29 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
 
 void BeehiveDHT::handleReplicateRequest(BeehiveReplicateCall* replicateRequest) 
 {
-    // request should probably contain already replicated keys, 
-    // need to check paper about it
+    // TODO: request contains list of replicated keys
 
-    // check the storage for new data for requesting node
-    // dataStorage->...
+    // TODO: compare incoming key list to the keys stored at this node, and store two list:
+    //      1. list of keys that should be replicated at predecessor (these keys weren't in the incoming list)
+    //      2. list of keys that should be deleted at predecessor (these keys were in the incoming list)
 
-    // send new information about replication in response
-    //sendRpcResponse(replicateRequest, ...);
+    // TODO: send back both of these lists in the response
+    // sendRpcResponse(replicateRequest, ...);
 }
 
 
 void BeehiveDHT::handleReplicateResponse(BeehiveReplicateResponse* replicateResponse, int rpcId) 
 {
-    // we get new data and keys in response, should put them in storage
+    // we receive two lists in response:
+    //      1. list of data to replicate here
+    //      2. list of keys to delete here
+
+    // TODO: store new data (first list)
     // dataStorage->addData(...);
 
-    // update routing data
+    // TODO: delete data that shouldn't be replicated anymore (second list)
+
+    // TODO: update routing data
     // BeehiveUpdateRoutingCall* beehiveUpdateRoutingCall = new BeehiveUpdateRoutingCall();
     // beehiveUpdateRoutingCall->...
     // sendInternalRpcCall(OVERLAY_COMP, beehiveUpdateRoutingCall, ...);

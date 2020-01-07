@@ -97,7 +97,7 @@ message BeehiveDHTTtlTimer
 //
 packet BeehiveReplicateCall extends BaseCallMessage
 {
-
+    vector<int> replicatedKeys;
 }
 
 //
