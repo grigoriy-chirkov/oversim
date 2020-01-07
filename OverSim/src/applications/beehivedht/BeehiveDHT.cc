@@ -819,16 +819,16 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
     
     // send replication request to all possible successors 
     // (technically, these requests should only be sent to nodes that are the "decidiing nodes" for a given object)
-    BeehiveReplicateCall *repmsg = new BeehiveReplicateCall();
 
     // TODO: get all successor keys
-    successorList = check_and_cast<BeehiveSuccessorList*>
-                      (getParentModule()->getSubmodule("successorList"));
+    // successorList = check_and_cast<BeehiveSuccessorList*>
+    //                   (getParentModule()->getSubmodule("successorList"));
 
 
 
     // TODO: loop over successor keys
     // for each key in successor list...
+        BeehiveReplicateCall *repmsg = new BeehiveReplicateCall();
         // msg->setDestinationKey(successorKey); // create message
         // sendRouteRpcCall(OVERLAY_COMP, successorKey, msg); // send rpc to compare replicated keys
 
