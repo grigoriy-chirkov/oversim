@@ -422,6 +422,8 @@ public:
      */
     virtual int getMaxNumSiblings();
 
+    virtual BeehiveSuccessorList* BaseOverlay::getSuccessorList();
+
     /**
      * Query the maximum number of redundant next hop nodes that
      * are returned by findNode().
