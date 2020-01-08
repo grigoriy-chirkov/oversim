@@ -845,6 +845,15 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
         BeehiveReplicateCall *repmsg = new BeehiveReplicateCall();
         // msg->setDestinationKey(successorKey); // create message
         // sendRouteRpcCall(OVERLAY_COMP, successorKey, msg); // send rpc to compare replicated keys
+         repmsg->setType(MYMSG_PING);
+         repmsg->setSenderAddress(thisNode);
+         repmsg->setByteLength(100);
+         std::cout << "\nCURRENT KEY\n";
+         std::cout << thisNode.getKey();
+         //successorList = check_and_cast<oversim::BeehiveSuccessorList*> overlay->getParentModule()->getSubmodule("successorList");
+         //std::cout << (overlay->getParentModule()->getSubmodule("successorList"))->getSize();
+         // = 
+         //callRoute(thisNode.getKey(), repmsg);
 
     // schedule next replication process
     cancelEvent(replicate_timer);
@@ -853,6 +862,8 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
 
 void BeehiveDHT::handleReplicateRequest(BeehiveReplicateCall* replicateRequest) 
 {
+
+    std::cout << replicateRequest->getType();
     // TODO: request contains list of replicated keys
 
     // TODO: compare incoming key list to the keys stored at this node, and store two list:

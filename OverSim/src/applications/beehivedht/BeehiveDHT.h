@@ -32,6 +32,7 @@
 
 #include "BeehiveDHTMessage_m.h"
 #include "BeehiveDHTDataStorage.h"
+#include "BeehiveSuccessorList.h"
 
 #include "BaseApp.h"
 #include <RpcMacros.h>

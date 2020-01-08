@@ -26,6 +26,7 @@ cplusplus {{
 #include <BinaryValue.h>
 #include <NodeHandle.h>
 #include <CommonMessages_m.h>
+#include <TransportAddress.h>
 
 #define SUCCESS_L 8
 #define KIND_L 32
@@ -50,6 +51,7 @@ class noncobject OverlayKey;
 class noncobject IPvXAddress;
 class noncobject BinaryValue;
 class noncobject NodeHandle;
+class noncobject TransportAddress;
 
 packet BeehiveDHTPutCall extends BaseCallMessage
 {
@@ -91,6 +93,12 @@ message BeehiveDHTTtlTimer
     uint32_t id;
 }
 
+enum MessageType
+{
+    MYMSG_PING = 1;
+    MYMSG_PONG = 2;
+}
+
 //
 // Message used for the replication protocol as mentioned in 
 // Beehive
@@ -98,6 +106,8 @@ message BeehiveDHTTtlTimer
 packet BeehiveReplicateCall extends BaseCallMessage
 {
     // vector<int> replicatedKeys;
+    int type enum (MessageType);
+    TransportAddress senderAddress;
 }
 
 //
