@@ -859,7 +859,7 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
 void BeehiveDHT::handleReplicateRequest(BeehiveReplicateCall* replicateRequest) 
 {
 
-	std::cout << replicateRequest.getMessageType();
+	//std::cout << replicateRequest.getType();
     // TODO: request contains list of replicated keys
 
     // TODO: compare incoming key list to the keys stored at this node, and store two list:
