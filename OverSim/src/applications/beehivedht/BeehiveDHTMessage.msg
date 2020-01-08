@@ -51,7 +51,6 @@ class noncobject OverlayKey;
 class noncobject IPvXAddress;
 class noncobject BinaryValue;
 class noncobject NodeHandle;
-class noncobject TransportAddress;
 
 packet BeehiveDHTPutCall extends BaseCallMessage
 {
@@ -93,11 +92,11 @@ message BeehiveDHTTtlTimer
     uint32_t id;
 }
 
-//enum MessageType 
-//{
-//    MYMSG_PING = 1;           // outgoing message
-//    MYMSG_PONG = 2;           // returning message
-//}
+enum MessageType 
+{
+    MYMSG_PING = 1;           // outgoing message
+    MYMSG_PONG = 2;           // returning message
+}
 
 //
 // Message used for the replication protocol as mentioned in 
@@ -106,8 +105,8 @@ message BeehiveDHTTtlTimer
 packet BeehiveReplicateCall extends BaseCallMessage
 {
     // vector<int> replicatedKeys;
-    //int type enum (MessageType);     // message type
-    //TransportAddress senderAddress;  // address of the node that sent the message
+    int type enum (MessageType);     // message type
+    TransportAddress senderAddress;  // address of the node that sent the message
 }
 
 //
