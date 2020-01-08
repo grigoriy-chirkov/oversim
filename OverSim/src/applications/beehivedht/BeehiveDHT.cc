@@ -73,7 +73,7 @@ void BeehiveDHT::initializeApp(int stage)
     ratioIdentical = par("ratioIdentical");
     replicateDelay = par("replicateDelay");
 
-    if ((int)numReplica > overlay->getMaxNumSiblings()) {
+    if ((int)numReplica > OverlayKey->getMaxNumSiblings()) {
         opp_error("BeehiveDHT::initialize(): numReplica bigger than what this "
                   "overlay can handle (%d)", overlay->getMaxNumSiblings());
     }
@@ -843,6 +843,11 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
     // TODO: loop over successor keys
     // for each key in successor list...
         BeehiveReplicateCall *repmsg = new BeehiveReplicateCall();
+        repmsg->setType(MYMSG_PING);
+        repmsg->setSenderAddress(overlay->getThisNode().getKey());           // set the sender address to our own
+        repmsg->setByteLength(100); 
+        callRoute(overlay->getThisNode().getKey(), repmsg); // send it to the overlay (send to self right now)
+
         // msg->setDestinationKey(successorKey); // create message
         // sendRouteRpcCall(OVERLAY_COMP, successorKey, msg); // send rpc to compare replicated keys
 
@@ -853,6 +858,8 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
 
 void BeehiveDHT::handleReplicateRequest(BeehiveReplicateCall* replicateRequest) 
 {
+
+	std::cout << replicateRequest.getMessageType();
     // TODO: request contains list of replicated keys
 
     // TODO: compare incoming key list to the keys stored at this node, and store two list:
