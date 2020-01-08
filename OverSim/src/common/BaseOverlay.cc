@@ -711,15 +711,6 @@ int BaseOverlay::getMaxNumSiblings()
     return false;
 }
 
-BeehiveSuccessorList* BaseOverlay::getSuccessorList()
-{
-    Enter_Method("getSuccessorList()");
-
-    throw cRuntimeError("getSuccessorList: Not implemented!");
-
-    return local_lookup(thisNode.getKey(), num, false);
-}
-
 int BaseOverlay::getMaxNumRedundantNodes()
 {
     Enter_Method("getMaxNumRedundantNodes()");
