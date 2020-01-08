@@ -26,6 +26,7 @@ cplusplus {{
 #include <BinaryValue.h>
 #include <NodeHandle.h>
 #include <CommonMessages_m.h>
+#include <TransportAddress.h>
 
 #define SUCCESS_L 8
 #define KIND_L 32
