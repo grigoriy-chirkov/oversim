@@ -843,10 +843,10 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
     // TODO: loop over successor keys
     // for each key in successor list...
         BeehiveReplicateCall *repmsg = new BeehiveReplicateCall();
-        //repmsg->setType(MYMSG_PING);
-        //repmsg->setSenderAddress(overlay->getThisNode().getKey());           // set the sender address to our own
-        //repmsg->setByteLength(100); 
-        //callRoute(overlay->getThisNode().getKey(), repmsg); // send it to the overlay (send to self right now)
+        repmsg->setType(MYMSG_PING);
+        repmsg->setSenderAddress(overlay->getThisNode().getKey());           // set the sender address to our own
+        repmsg->setByteLength(100); 
+        callRoute(overlay->getThisNode().getKey(), repmsg); // send it to the overlay (send to self right now)
 
         // msg->setDestinationKey(successorKey); // create message
         // sendRouteRpcCall(OVERLAY_COMP, successorKey, msg); // send rpc to compare replicated keys
