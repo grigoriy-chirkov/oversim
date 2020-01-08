@@ -836,9 +836,9 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
     }
     // currData now holds all keys at this node. It should be included in the replication request sent to all successors.
 
-    for (int i = 0; i < currData.size(); i++) {
-        std::cout << currData[i];
-    }
+    //for (int i = 0; i < currData.size(); i++) {
+    //    std::cout << currData[i];
+    //}
 
     // TODO: loop over successor keys
     // for each key in successor list...
