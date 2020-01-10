@@ -857,8 +857,9 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
          //std::cout << "\nNEIGHBOR\n";
          //std::cout << fingTable->getFinger(2).getKey();
 
+	 // create message
          BeehiveReplicateCall *repmsg = new BeehiveReplicateCall();
-         repmsg->setDestinationKey(fingTable->getFinger(2).getKey()); // create message
+         repmsg->setDestinationKey(fingTable->getFinger(2).getKey()); 
 
          if (dumpVector->size() > 0) {
              repmsg->setReplicatedKeysArraySize(dumpVector->size());
@@ -911,7 +912,7 @@ void BeehiveDHT::handleReplicateRequest(BeehiveReplicateCall* replicateRequest)
             if (incomingData[i].getKey().toString() == currData[j].getKey().toString()) {
 		sharedKeys.push_back(incomingData[i].getKey().toString());
 		//std::cout << incomingData[i].getKey().toString();
-	    } else if (unreplicatedKeys.find(incomingData[i].getKey().toString()) == unreplicatedKeys.end()) {
+	    } else if (unreplicatedKeys.find(incomingData[i].getKey().toString()) == unreplicatedKeys.end() && currData[j].getResponsible() == true) {
 		unreplicatedKeys.insert(currData[j].getKey().toString());
 	    }
 	}
