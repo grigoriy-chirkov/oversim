@@ -27,6 +27,7 @@ cplusplus {{
 #include <NodeHandle.h>
 #include <CommonMessages_m.h>
 #include <TransportAddress.h>
+#include <vector>
 
 #define SUCCESS_L 8
 #define KIND_L 32
@@ -52,6 +53,7 @@ class noncobject IPvXAddress;
 class noncobject BinaryValue;
 class noncobject NodeHandle;
 class noncobject TransportAddress;
+class noncobject BeehiveDHTDumpVector;
 
 packet BeehiveDHTPutCall extends BaseCallMessage
 {
@@ -105,9 +107,10 @@ enum MessageType
 //
 packet BeehiveReplicateCall extends BaseCallMessage
 {
-    // vector<int> replicatedKeys;
     int type enum (MessageType);
+    DhtDumpEntry replicatedKeys[];
     TransportAddress senderAddress;
+    OverlayKey destinationKey;
 }
 
 //
@@ -115,5 +118,6 @@ packet BeehiveReplicateCall extends BaseCallMessage
 //
 packet BeehiveReplicateResponse extends BaseResponseMessage
 {
-    
+    NodeHandle respondingNode;
+    DhtDumpEntry objectsToReplicate[];
 }

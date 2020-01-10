@@ -24,7 +24,9 @@
 #include <IPAddressResolver.h>
 
 #include "BeehiveDHT.h"
+#include <Beehive.h>
 #include <BeehiveSuccessorList.h>
+#include <BeehiveFingerTable.h>
 
 #include <RpcMacros.h>
 #include <BaseRpc.h>
@@ -819,6 +821,10 @@ int BeehiveDHT::resultValuesBitLength(BeehiveDHTGetResponse* msg) {
 void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg) 
 {
     
+    if (msg == replicate_timer) {
+        //std::cout << "Rescheduling replicate timer...\n";
+        scheduleAt(simTime() + replicateDelay, replicate_timer);
+    }
     // send replication request to all possible successors 
     // (technically, these requests should only be sent to nodes that are the "decidiing nodes" for a given object)
 
@@ -836,42 +842,105 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
     }
     // currData now holds all keys at this node. It should be included in the replication request sent to all successors.
 
-    //for (int i = 0; i < currData.size(); i++) {
-    //    std::cout << currData[i];
-    //}
-
     // TODO: loop over successor keys
     // for each key in successor list...
-        BeehiveReplicateCall *repmsg = new BeehiveReplicateCall();
-        // msg->setDestinationKey(successorKey); // create message
+
+
         // sendRouteRpcCall(OVERLAY_COMP, successorKey, msg); // send rpc to compare replicated keys
-         repmsg->setType(MYMSG_PING);
-         repmsg->setSenderAddress(thisNode);
-         repmsg->setByteLength(100);
-         std::cout << "\nCURRENT KEY\n";
-         std::cout << thisNode.getKey();
-         //successorList = check_and_cast<oversim::BeehiveSuccessorList*> overlay->getParentModule()->getSubmodule("successorList");
-         //std::cout << (overlay->getParentModule()->getSubmodule("successorList"))->getSize();
-         // = 
-         //callRoute(thisNode.getKey(), repmsg);
+
+         oversim::Beehive* bOverlay = dynamic_cast<oversim::Beehive*>(overlay);
+         oversim::BeehiveSuccessorList* succList = dynamic_cast<oversim::BeehiveSuccessorList*>(bOverlay->getParentModule()->getSubmodule("successorList"));
+         oversim::BeehiveFingerTable* fingTable = dynamic_cast<oversim::BeehiveFingerTable*>(bOverlay->getParentModule()->getSubmodule("fingerTable"));
+         //oversim::NodeHandle* succNode = dynamic_cast<oversim::NodeHandle*>(succList->getSuccessor());
+         //std::cout << "\nTHIS NODE\n";
+         //std::cout << bOverlay->getThisNode().getKey();
+         //std::cout << "\nNEIGHBOR\n";
+         //std::cout << fingTable->getFinger(2).getKey();
+
+	 // create message
+         BeehiveReplicateCall *repmsg = new BeehiveReplicateCall();
+         repmsg->setDestinationKey(fingTable->getFinger(2).getKey()); 
+
+         if (dumpVector->size() > 0) {
+             repmsg->setReplicatedKeysArraySize(dumpVector->size());
+             for (uint32 i = 0; i < dumpVector->size(); i++) {
+                 repmsg->setReplicatedKeys(i, (*dumpVector)[i]);
+             }
+         } else {
+             repmsg->setReplicatedKeysArraySize(0);
+         }
+         //repmsg->setReplicatedKeys(currData);
+         sendRouteRpcCall(TIER1_COMP, fingTable->getFinger(2).getKey(), repmsg);
+         //
+         //repmsg->setSenderAddress(bOverlay->getThisNode());
+         //repmsg->setByteLength(100);
+         //callRoute(fingTable->getFinger(2).getKey(), repmsg);
 
     // schedule next replication process
-    cancelEvent(replicate_timer);
-    scheduleAt(simTime() + replicateDelay, repmsg);
+    //cancelEvent(replicate_timer);
+    //scheduleAt(simTime() + replicateDelay, repmsg);
 }
 
 void BeehiveDHT::handleReplicateRequest(BeehiveReplicateCall* replicateRequest) 
 {
+    BeehiveReplicateCall* rrpc = (BeehiveReplicateCall*) replicateRequest;
+    //std::cout << "RECEIVED REPLICATE REQUEST\n";
 
-    std::cout << replicateRequest->getType();
-    // TODO: request contains list of replicated keys
+    // get list of incoming data keys
+    DhtDumpEntry incomingData[rrpc->getReplicatedKeysArraySize()];// = rrpc->getReplicatedKeys();
+    //[rrpc->getReplicatedKeysArraySize()]; // list to store keys
+    for (uint i = 0; i < rrpc->getReplicatedKeysArraySize(); i++) {
+        incomingData[i] = rrpc->getReplicatedKeys(i);
+        //incomingData[i] = currDataKey;
+    }
 
-    // TODO: compare incoming key list to the keys stored at this node, and store two list:
+    // Get the list of keys that live at this node
+    BeehiveDHTDumpVector* dumpVector = dataStorage->dumpDht(); // Dumps out all data
+    int numKeysStored = dumpVector->size(); // number of keys stored here
+    DhtDumpEntry currData[numKeysStored]; // list to store keys
+    for (uint32_t i = 0; i < numKeysStored; i++) { // fill up the list
+        currData[i] = (*dumpVector)[i];
+    }
+
+    // compare incoming key list to the keys stored at this node, and store two list:
     //      1. list of keys that should be replicated at predecessor (these keys weren't in the incoming list)
     //      2. list of keys that should be deleted at predecessor (these keys were in the incoming list)
+    vector<string> sharedKeys;
+    set<string> unreplicatedKeys;
+    for (uint i = 0; i < rrpc->getReplicatedKeysArraySize(); i++) {
+        for (uint j = 0; j < numKeysStored; j++) {
+            if (incomingData[i].getKey().toString() == currData[j].getKey().toString()) {
+		sharedKeys.push_back(incomingData[i].getKey().toString());
+		//std::cout << incomingData[i].getKey().toString();
+	    } else if (unreplicatedKeys.find(incomingData[i].getKey().toString()) == unreplicatedKeys.end() && currData[j].getResponsible() == true) {
+		unreplicatedKeys.insert(currData[j].getKey().toString());
+	    }
+	}
+    }
+
+    // get the actual objects to replicate, not just their keys
+    DhtDumpEntry objectsToReplicate[unreplicatedKeys.size()];
+    int objCounter = 0;
+    for (uint i = 0; i < rrpc->getReplicatedKeysArraySize(); i++) {
+	if (unreplicatedKeys.find(incomingData[i].getKey().toString()) != unreplicatedKeys.end()) {
+	    objectsToReplicate[objCounter] = incomingData[i];
+	    objCounter++;
+	}
+    }
 
     // TODO: send back both of these lists in the response
-    // sendRpcResponse(replicateRequest, ...);
+    BeehiveReplicateResponse *resprpc = new BeehiveReplicateResponse();
+    resprpc->setRespondingNode(thisNode);
+    resprpc->setObjectsToReplicateArraySize(unreplicatedKeys.size());
+
+
+    for (uint32 i = 0; i < unreplicatedKeys.size(); i++) {
+	resprpc->setObjectsToReplicate(i, objectsToReplicate[i]);
+	DhtDumpEntry currObject = objectsToReplicate[i];
+	//std::cout << objectsToReplicate[i].getValue();
+	//std::cout << "\n";
+    }
+    sendRpcResponse(rrpc, resprpc);
 }
 
 
@@ -881,8 +950,26 @@ void BeehiveDHT::handleReplicateResponse(BeehiveReplicateResponse* replicateResp
     //      1. list of data to replicate here
     //      2. list of keys to delete here
 
+    BeehiveReplicateResponse* rrpc = (BeehiveReplicateResponse*) replicateResponse;
+
     // TODO: store new data (first list)
-    // dataStorage->addData(...);
+    int numDataToStore = rrpc->getObjectsToReplicateArraySize();
+    for (uint i = 0; i < numDataToStore; i++) {
+	DhtDumpEntry currDatum = rrpc->getObjectsToReplicate(i);
+        
+	if (currDatum.getKind() != 0) {
+	    std::cout << "ADDING";
+
+	// create TTL message
+	    BeehiveDHTTtlTimer *timerMsg = new BeehiveDHTTtlTimer("ttl_timer");
+	    timerMsg->setKey(currDatum.getKey());
+            timerMsg->setKind(currDatum.getKind());
+            timerMsg->setId(currDatum.getId());
+            scheduleAt(simTime() + currDatum.getTtl(), timerMsg);
+	
+	    dataStorage->addData(currDatum.getKey(), currDatum.getKind(), currDatum.getId(), currDatum.getValue(), timerMsg, currDatum.getIs_modifiable(), currDatum.getOwnerNode(), false);
+	}
+    }
 
     // TODO: delete data that shouldn't be replicated anymore (second list)
 
