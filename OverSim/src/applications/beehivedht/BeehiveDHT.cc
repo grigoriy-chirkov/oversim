@@ -962,13 +962,11 @@ void BeehiveDHT::handleReplicateResponse(BeehiveReplicateResponse* replicateResp
 
     // TODO: update routing data
     BeehiveUpdateRoutingCall* beehiveUpdateRoutingCall = new BeehiveUpdateRoutingCall();
-    //std::cout << keysActuallyReplicated[0];
 
     beehiveUpdateRoutingCall->setNewReplicatedKeysArraySize(keysActuallyReplicated.size());
     set<string> newReplicatedKeysSet;
     for (uint i = 0; i < keysActuallyReplicated.size(); i++) {
-	//std::cout << keysActuallyReplicated[i].getKey().toString() + "\n";
-	beehiveUpdateRoutingCall->setNewReplicatedKeys(i, keysActuallyReplicated[i]);
+    	beehiveUpdateRoutingCall->setNewReplicatedKeys(i, keysActuallyReplicated[i]);
     }
     
     sendInternalRpcCall(OVERLAY_COMP, beehiveUpdateRoutingCall);
