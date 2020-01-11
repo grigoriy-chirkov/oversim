@@ -55,6 +55,7 @@ void RecursiveLookup::lookup(const OverlayKey& key, int numSiblings,
                              int hopCountMax, int retries,
                              LookupListener* listener)
 {
+    std::cout << "RECURSIVE" << std::endl;
     this->listener = listener;
 
     FindNodeCall* call = new FindNodeCall("FindNodeCall");

@@ -127,6 +127,7 @@ protected:
     int retries;                    /**< number of retries, if lookup fails */
     bool appLookup;
     SimTime startTime;              /**< time at which the lookup was started */
+    bool readReplicated;
 
 public://virtual methods: comparator induced by distance in BaseOverlay
     /**
@@ -258,7 +259,7 @@ protected://methods: rpc distribution
 public://construction & destruction
     IterativeLookup(BaseOverlay* overlay, RoutingType routingType,
                const IterativeLookupConfiguration& config,
-               const cPacket* findNodeExt = NULL, bool appLookup = false);
+               const cPacket* findNodeExt = NULL, bool appLookup = false, bool readReplicated = false);
 
     virtual ~IterativeLookup();
 

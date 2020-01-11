@@ -1663,7 +1663,7 @@ bool BaseOverlay::checkFindNode(BaseRouteMessage* routeMsg)
 AbstractLookup* BaseOverlay::createLookup(RoutingType routingType,
                                           const BaseOverlayMessage* msg,
                                           const cPacket* findNodeExt,
-                                          bool appLookup)
+                                          bool appLookup, bool readReplicated)
 {
     AbstractLookup* newLookup;
 
@@ -1676,7 +1676,7 @@ AbstractLookup* BaseOverlay::createLookup(RoutingType routingType,
         case EXHAUSTIVE_ITERATIVE_ROUTING:
             newLookup = new IterativeLookup(this, routingType,
                                             iterativeLookupConfig, findNodeExt,
-                                            appLookup);
+                                            appLookup, readReplicated);
             break;
         case RECURSIVE_SOURCE_ROUTING:
         case SEMI_RECURSIVE_ROUTING:
@@ -1713,7 +1713,7 @@ OverlayKey BaseOverlay::distance(const OverlayKey& x,
 NodeVector* BaseOverlay::findNode(const OverlayKey& key,
                                   int numRedundantNodes,
                                   int numSiblings,
-                                  BaseOverlayMessage* msg, string callType)
+                                  BaseOverlayMessage* msg, string callType, bool readReplicated)
 {
     throw cRuntimeError("findNode: Not implemented!");
     return NULL;
@@ -2030,7 +2030,7 @@ void BaseOverlay::lookupRpc(LookupCall* call)
 
     // create lookup and sent to key
     AbstractLookup* lookup = createLookup(static_cast<RoutingType>(
-            call->getRoutingType()), call, NULL, true);
+            call->getRoutingType()), call, NULL, true, call->getReadReplicated());
     lookup->lookup(call->getKey(), numSiblings, hopCountMax,
                    1, new SendToKeyListener( this, call ));
 }

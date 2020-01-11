@@ -70,7 +70,7 @@ IterativeLookup::IterativeLookup(BaseOverlay* overlay,
                                  RoutingType routingType,
                                  const IterativeLookupConfiguration& config,
                                  const cPacket* findNodeExt,
-                                 bool appLookup) :
+                                 bool appLookup, bool readReplicated) :
 overlay(overlay),
 routingType(routingType),
 config(config),
@@ -78,7 +78,8 @@ firstCallExt(NULL),
 finished(false),
 success(false),
 running(false),
-appLookup(appLookup)
+appLookup(appLookup),
+readReplicated(readReplicated)
 {
     if (findNodeExt) firstCallExt = static_cast<cPacket*>(findNodeExt->dup());
 
@@ -151,7 +152,7 @@ void IterativeLookup::start()
     // get local closest nodes
     FindNodeCall* call = createFindNodeCall(firstCallExt);
     NodeVector* nextHops = overlay->findNode(key, overlay->getMaxNumRedundantNodes(),
-        (routingType == EXHAUSTIVE_ITERATIVE_ROUTING) ? -1 : numSiblings, call);
+        (routingType == EXHAUSTIVE_ITERATIVE_ROUTING) ? -1 : numSiblings, call, "", readReplicated);
 
     bool err;
 

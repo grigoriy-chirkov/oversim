@@ -664,7 +664,7 @@ protected://methods: routing class factory
     virtual AbstractLookup* createLookup(RoutingType routingType = DEFAULT_ROUTING,
                                          const BaseOverlayMessage* msg = NULL,
                                          const cPacket* findNodeExt = NULL,
-                                         bool appLookup = false);
+                                         bool appLookup = false, bool readReplicated = false);
 
     /**
      * Removes the abstract lookup instance.
@@ -692,7 +692,9 @@ protected://methods: routing class factory
     virtual NodeVector* findNode( const OverlayKey& key,
                                   int numRedundantNodes,
                                   int numSiblings,
-                                  BaseOverlayMessage* msg = NULL, std::string callType = "get");
+                                  BaseOverlayMessage* msg = NULL, 
+                                  std::string callType = "get", 
+                                  bool readReplicated = false);
 
 
     /**

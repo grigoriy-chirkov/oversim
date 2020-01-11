@@ -436,6 +436,7 @@ void BeehiveDHT::handlePutCAPIRequest(DHTputCAPICall* capiPutMsg)
     LookupCall* lookupCall = new LookupCall();
     lookupCall->setKey(capiPutMsg->getKey());
     lookupCall->setNumSiblings(numReplica);
+    lookupCall->setReadReplicated(false);
     sendInternalRpcCall(OVERLAY_COMP, lookupCall, NULL, -1, 0,
                         capiPutMsg->getNonce());
 
@@ -450,6 +451,7 @@ void BeehiveDHT::handleGetCAPIRequest(DHTgetCAPICall* capiGetMsg)
     LookupCall* lookupCall = new LookupCall();
     lookupCall->setKey(capiGetMsg->getKey());
     lookupCall->setNumSiblings(numReplica);
+    lookupCall->setReadReplicated(true);
     sendInternalRpcCall(OVERLAY_COMP, lookupCall, NULL, -1, 0,
                         capiGetMsg->getNonce());
 

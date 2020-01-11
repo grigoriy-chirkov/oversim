@@ -241,7 +241,7 @@ packet FindNodeCall extends BaseCallMessage
     OverlayKey lookupKey;   // request nextHops for this key
     int numRedundantNodes;  // number of redundant nodes to return
     int numSiblings;        // number of siblings to return
-    bool exhaustiveIterative = false; // for exhaustive-iterative always request numRedudantNode, even if node is a sibling
+    bool exhaustiveIterative = false; // for exhaustive-iterative always request numRedudantNode, even if node is a sibling§
 }
 
 //
@@ -488,6 +488,7 @@ packet LookupCall extends BaseCallMessage
     OverlayKey key;
     int numSiblings;
     int routingType enum(RoutingType) = DEFAULT_ROUTING;
+    bool readReplicated = false;
 }
 
 //

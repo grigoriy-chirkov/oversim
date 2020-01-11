@@ -587,12 +587,11 @@ bool Beehive::handleFailedNode(const TransportAddress& failed)
 NodeVector* Beehive::findNode(const OverlayKey& key,
                             int numRedundantNodes,
                             int numSiblings,
-                            BaseOverlayMessage* msg, string callType)
+                            BaseOverlayMessage* msg, string callType, bool readReplicated)
 {
     bool err;
     NodeVector* nextHop;
 
-   std::cout << msg->getStatType();
 
     if (state != READY)
         return new NodeVector();
@@ -611,7 +610,7 @@ NodeVector* Beehive::findNode(const OverlayKey& key,
     }
 
     // if replicated here, the message is for this node
-    else if (isReplicatedHere(key) /* AND IT DOES NOT MODIFY DATA */) {
+    else if (isReplicatedHere(key) && readReplicated) {
         nextHop = new NodeVector();
         nextHop->push_back(thisNode);
     }

@@ -193,7 +193,7 @@ protected:
     NodeVector* findNode(const OverlayKey& key,
                          int numRedundantNodes,
                          int numSiblings,
-                         BaseOverlayMessage* msg, std::string callType);
+                         BaseOverlayMessage* msg, std::string callType, bool readReplicated);
 
     // see BaseOverlay.h
     virtual void joinOverlay();
