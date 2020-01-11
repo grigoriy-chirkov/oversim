@@ -46,6 +46,7 @@
 #include <BootstrapList.h>
 
 #include "BaseOverlay.h"
+#include <typeinfo>
 
 using namespace std;
 
@@ -1356,6 +1357,19 @@ void BaseOverlay::route(const OverlayKey& key, CompType destComp,
                         const std::vector<TransportAddress>& sourceRoute,
                         RoutingType routingType)
 {
+    char c = msg->getClassName()[10]; // e.g. BeehiveDHTPutCall
+    //string cc = string (c, 1);
+    //std::cout << c;
+    //std::cout << (c == 'P');// typeid(msg->getClassName()).name(); // == "BeehiveDHTPutCall");
+    //std::cout << "\n";
+    string currCallType;
+    if (c == 'P') {
+	//std::cout << "PUT CALL\n";
+	currCallType = "put";
+    } else {
+	currCallType = "other"; // only really need to distinguish puts
+   }
+    //std::cout << "\n";
     if (key.isUnspecified() &&
         (!sourceRoute.size() || sourceRoute[0].isUnspecified()))
         throw cRuntimeError("route(): Key and hint unspecified!");
@@ -1398,7 +1412,7 @@ void BaseOverlay::route(const OverlayKey& key, CompType destComp,
             return;
         }
 
-        sendToKey(key, baseAppDataMsg, 1, sourceRoute, routingType);
+        sendToKey(key, baseAppDataMsg, 1, sourceRoute, routingType, currCallType);
     }
 }
 
@@ -1411,9 +1425,12 @@ bool BaseOverlay::recursiveRoutingHook(const TransportAddress& dest,
 void BaseOverlay::sendToKey(const OverlayKey& key, BaseOverlayMessage* msg,
                             int numSiblings,
                             const std::vector<TransportAddress>& sourceRoute,
-                            RoutingType routingType)
+                            RoutingType routingType, string callType)
 {
     BaseRouteMessage* routeMsg = NULL;
+    //if (callType == "put") {
+	//std::cout << "PUTTT";
+    //}
 
     if (routingType == DEFAULT_ROUTING) routingType = defaultRoutingType;
 
@@ -1488,7 +1505,7 @@ void BaseOverlay::sendToKey(const OverlayKey& key, BaseOverlayMessage* msg,
         // recursive routing
         NodeVector* nextHops = findNode(routeMsg->getDestKey(),
                                         recNumRedundantNodes,
-                                        numSiblings, routeMsg);
+                                        numSiblings, routeMsg, callType);
 
         if (nextHops->size() == 0) {
             EV << "[BaseOverlay::sendToKey() @ " << thisNode.getIp()
@@ -1696,7 +1713,7 @@ OverlayKey BaseOverlay::distance(const OverlayKey& x,
 NodeVector* BaseOverlay::findNode(const OverlayKey& key,
                                   int numRedundantNodes,
                                   int numSiblings,
-                                  BaseOverlayMessage* msg)
+                                  BaseOverlayMessage* msg, string callType)
 {
     throw cRuntimeError("findNode: Not implemented!");
     return NULL;

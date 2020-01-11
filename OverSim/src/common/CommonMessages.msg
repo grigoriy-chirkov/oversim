@@ -504,7 +504,7 @@ packet LookupResponse extends BaseResponseMessage
 
 packet BeehiveUpdateRoutingCall extends BaseCallMessage
 {
-
+    DhtDumpEntry newReplicatedKeys[]; // keys that have just been replicated
 }
 
 packet BeehiveUpdateRoutingResponse extends BaseResponseMessage

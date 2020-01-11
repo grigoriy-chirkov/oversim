@@ -28,6 +28,8 @@
 #include <NeighborCache.h>
 
 #include "BeehiveMessage_m.h"
+#include <set>
+#include <string>
 
 namespace oversim {
 
@@ -133,6 +135,7 @@ protected:
     // module references
     BeehiveFingerTable* fingerTable; /**< pointer to this node's finger table */
     BeehiveSuccessorList* successorList; /**< pointer to this node's successor list */
+    std::set<std::string> overlayReplicatedKeys;
 
     // beehive routines
 
@@ -190,7 +193,7 @@ protected:
     NodeVector* findNode(const OverlayKey& key,
                          int numRedundantNodes,
                          int numSiblings,
-                         BaseOverlayMessage* msg);
+                         BaseOverlayMessage* msg, std::string callType);
 
     // see BaseOverlay.h
     virtual void joinOverlay();

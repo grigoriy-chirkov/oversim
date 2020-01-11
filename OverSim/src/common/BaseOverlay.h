@@ -36,6 +36,7 @@
 #include <IterativeLookupConfiguration.h>
 #include <RecursiveLookup.h>
 #include <InitStages.h>
+#include <string>
 
 class GlobalNodeList;
 class UnderlayConfigurator;
@@ -630,7 +631,7 @@ public://methods: basic message routing
                    int numSiblings = 1,
                    const std::vector<TransportAddress>& sourceRoute
                              = TransportAddress::UNSPECIFIED_NODES,
-                   RoutingType routingType = DEFAULT_ROUTING);
+                   RoutingType routingType = DEFAULT_ROUTING, std::string callType = "get");
 
     /**
      * This method should implement the distance between two keys.
@@ -691,7 +692,7 @@ protected://methods: routing class factory
     virtual NodeVector* findNode( const OverlayKey& key,
                                   int numRedundantNodes,
                                   int numSiblings,
-                                  BaseOverlayMessage* msg = NULL);
+                                  BaseOverlayMessage* msg = NULL, std::string callType = "get");
 
 
     /**

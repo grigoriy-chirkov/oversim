@@ -29,6 +29,7 @@
 
 #include <BeehiveFingerTable.h>
 #include <BeehiveSuccessorList.h>
+#include <set>
 
 #include "Beehive.h"
 
@@ -427,6 +428,13 @@ void Beehive::rpcUpdateRouting(BeehiveUpdateRoutingCall* beehiveUpdateRoutingCal
     // probably should have some kind of a set of replicated keys, 
     // so when we get this request we just add new keys to this set and
     // remove keys which are deleted
+    int numNewKeys = beehiveUpdateRoutingCall->getNewReplicatedKeysArraySize();
+    DhtDumpEntry newReplicatedObjects[numNewKeys];
+
+    for (uint i = 0; i < numNewKeys; i++) {
+	//std::cout << beehiveUpdateRoutingCall->getNewReplicatedKeys(i).getKey().toString();
+	overlayReplicatedKeys.insert(beehiveUpdateRoutingCall->getNewReplicatedKeys(i).getKey().toString());
+    }
 
 
     // notify app tier about success
@@ -579,10 +587,12 @@ bool Beehive::handleFailedNode(const TransportAddress& failed)
 NodeVector* Beehive::findNode(const OverlayKey& key,
                             int numRedundantNodes,
                             int numSiblings,
-                            BaseOverlayMessage* msg)
+                            BaseOverlayMessage* msg, string callType)
 {
     bool err;
     NodeVector* nextHop;
+
+   std::cout << msg->getStatType();
 
     if (state != READY)
         return new NodeVector();

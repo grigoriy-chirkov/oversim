@@ -954,11 +954,11 @@ void BeehiveDHT::handleReplicateResponse(BeehiveReplicateResponse* replicateResp
 
     // TODO: store new data (first list)
     int numDataToStore = rrpc->getObjectsToReplicateArraySize();
+    vector<DhtDumpEntry> keysActuallyReplicated;
     for (uint i = 0; i < numDataToStore; i++) {
 	DhtDumpEntry currDatum = rrpc->getObjectsToReplicate(i);
         
 	if (currDatum.getKind() != 0) {
-	    std::cout << "ADDING";
 
 	// create TTL message
 	    BeehiveDHTTtlTimer *timerMsg = new BeehiveDHTTtlTimer("ttl_timer");
@@ -968,15 +968,25 @@ void BeehiveDHT::handleReplicateResponse(BeehiveReplicateResponse* replicateResp
             scheduleAt(simTime() + currDatum.getTtl(), timerMsg);
 	
 	    dataStorage->addData(currDatum.getKey(), currDatum.getKind(), currDatum.getId(), currDatum.getValue(), timerMsg, currDatum.getIs_modifiable(), currDatum.getOwnerNode(), false);
+
+	    keysActuallyReplicated.push_back(currDatum);
 	}
     }
 
     // TODO: delete data that shouldn't be replicated anymore (second list)
 
     // TODO: update routing data
-    // BeehiveUpdateRoutingCall* beehiveUpdateRoutingCall = new BeehiveUpdateRoutingCall();
-    // beehiveUpdateRoutingCall->...
-    // sendInternalRpcCall(OVERLAY_COMP, beehiveUpdateRoutingCall, ...);
+    BeehiveUpdateRoutingCall* beehiveUpdateRoutingCall = new BeehiveUpdateRoutingCall();
+    //std::cout << keysActuallyReplicated[0];
+
+    beehiveUpdateRoutingCall->setNewReplicatedKeysArraySize(keysActuallyReplicated.size());
+    set<string> newReplicatedKeysSet;
+    for (uint i = 0; i < keysActuallyReplicated.size(); i++) {
+	//std::cout << keysActuallyReplicated[i].getKey().toString() + "\n";
+	beehiveUpdateRoutingCall->setNewReplicatedKeys(i, keysActuallyReplicated[i]);
+    }
+    
+    sendInternalRpcCall(OVERLAY_COMP, beehiveUpdateRoutingCall);
 }
 
 void BeehiveDHT::handleUpdateRoutingResponse(BeehiveUpdateRoutingResponse* updateRoutingResponse, int rpcId)
