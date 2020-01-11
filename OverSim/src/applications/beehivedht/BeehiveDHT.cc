@@ -850,29 +850,29 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
 
         // sendRouteRpcCall(OVERLAY_COMP, successorKey, msg); // send rpc to compare replicated keys
 
-         oversim::Beehive* bOverlay = dynamic_cast<oversim::Beehive*>(overlay);
-         oversim::BeehiveSuccessorList* succList = dynamic_cast<oversim::BeehiveSuccessorList*>(bOverlay->getParentModule()->getSubmodule("successorList"));
-         oversim::BeehiveFingerTable* fingTable = dynamic_cast<oversim::BeehiveFingerTable*>(bOverlay->getParentModule()->getSubmodule("fingerTable"));
+    oversim::Beehive* bOverlay = dynamic_cast<oversim::Beehive*>(overlay);
+    oversim::BeehiveSuccessorList* succList = dynamic_cast<oversim::BeehiveSuccessorList*>(bOverlay->getParentModule()->getSubmodule("successorList"));
+    oversim::BeehiveFingerTable* fingTable = dynamic_cast<oversim::BeehiveFingerTable*>(bOverlay->getParentModule()->getSubmodule("fingerTable"));
 
-	 int numFingers = fingTable->getSize();
+    int numFingers = fingTable->getSize();
 
-	 for (uint i = 0; i < numFingers; i++) {
-	     
+    for (uint i = 0; i < numFingers; i++) {
 
-	 // create message
-         BeehiveReplicateCall *repmsg = new BeehiveReplicateCall();
-         repmsg->setDestinationKey(fingTable->getFinger(i).getKey()); 
 
-         if (dumpVector->size() > 0) {
-             repmsg->setReplicatedKeysArraySize(dumpVector->size());
-             for (uint32 j = 0; j < dumpVector->size(); j++) {
-                 repmsg->setReplicatedKeys(j, (*dumpVector)[j]);
-             }
-         } else {
-             repmsg->setReplicatedKeysArraySize(0);
-         }
-         //repmsg->setReplicatedKeys(currData);
-         sendRouteRpcCall(TIER1_COMP, fingTable->getFinger(i).getKey(), repmsg);
+    // create message
+    BeehiveReplicateCall *repmsg = new BeehiveReplicateCall();
+    repmsg->setDestinationKey(fingTable->getFinger(i).getKey()); 
+
+    if (dumpVector->size() > 0) {
+        repmsg->setReplicatedKeysArraySize(dumpVector->size());
+        for (uint32 j = 0; j < dumpVector->size(); j++) {
+            repmsg->setReplicatedKeys(j, (*dumpVector)[j]);
+        }
+    } else {
+        repmsg->setReplicatedKeysArraySize(0);
+    }
+    
+    sendRouteRpcCall(TIER1_COMP, fingTable->getFinger(i).getKey(), repmsg);
 
 	}
          //
@@ -881,8 +881,8 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
          //callRoute(fingTable->getFinger(2).getKey(), repmsg);
 
     // schedule next replication process
-    //cancelEvent(replicate_timer);
-    //scheduleAt(simTime() + replicateDelay, repmsg);
+    cancelEvent(replicate_timer);
+    scheduleAt(simTime() + replicateDelay, repmsg);
 }
 
 void BeehiveDHT::handleReplicateRequest(BeehiveReplicateCall* replicateRequest) 
