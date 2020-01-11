@@ -853,26 +853,28 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
          oversim::Beehive* bOverlay = dynamic_cast<oversim::Beehive*>(overlay);
          oversim::BeehiveSuccessorList* succList = dynamic_cast<oversim::BeehiveSuccessorList*>(bOverlay->getParentModule()->getSubmodule("successorList"));
          oversim::BeehiveFingerTable* fingTable = dynamic_cast<oversim::BeehiveFingerTable*>(bOverlay->getParentModule()->getSubmodule("fingerTable"));
-         //oversim::NodeHandle* succNode = dynamic_cast<oversim::NodeHandle*>(succList->getSuccessor());
-         //std::cout << "\nTHIS NODE\n";
-         //std::cout << bOverlay->getThisNode().getKey();
-         //std::cout << "\nNEIGHBOR\n";
-         //std::cout << fingTable->getFinger(2).getKey();
+
+	 int numFingers = fingTable->getSize();
+
+	 for (uint i = 0; i < numFingers; i++) {
+	     
 
 	 // create message
          BeehiveReplicateCall *repmsg = new BeehiveReplicateCall();
-         repmsg->setDestinationKey(fingTable->getFinger(2).getKey()); 
+         repmsg->setDestinationKey(fingTable->getFinger(i).getKey()); 
 
          if (dumpVector->size() > 0) {
              repmsg->setReplicatedKeysArraySize(dumpVector->size());
-             for (uint32 i = 0; i < dumpVector->size(); i++) {
-                 repmsg->setReplicatedKeys(i, (*dumpVector)[i]);
+             for (uint32 j = 0; j < dumpVector->size(); j++) {
+                 repmsg->setReplicatedKeys(j, (*dumpVector)[j]);
              }
          } else {
              repmsg->setReplicatedKeysArraySize(0);
          }
          //repmsg->setReplicatedKeys(currData);
-         sendRouteRpcCall(TIER1_COMP, fingTable->getFinger(2).getKey(), repmsg);
+         sendRouteRpcCall(TIER1_COMP, fingTable->getFinger(i).getKey(), repmsg);
+
+	}
          //
          //repmsg->setSenderAddress(bOverlay->getThisNode());
          //repmsg->setByteLength(100);
@@ -914,7 +916,7 @@ void BeehiveDHT::handleReplicateRequest(BeehiveReplicateCall* replicateRequest)
             if (incomingData[i].getKey().toString() == currData[j].getKey().toString()) {
 		sharedKeys.push_back(incomingData[i].getKey().toString());
 		//std::cout << incomingData[i].getKey().toString();
-	    } else if (unreplicatedKeys.find(incomingData[i].getKey().toString()) == unreplicatedKeys.end() && currData[j].getResponsible() == true) {
+	    } else if (unreplicatedKeys.find(incomingData[i].getKey().toString()) == unreplicatedKeys.end()) {// && currData[j].getResponsible() == true) {
 		unreplicatedKeys.insert(currData[j].getKey().toString());
 	    }
 	}
