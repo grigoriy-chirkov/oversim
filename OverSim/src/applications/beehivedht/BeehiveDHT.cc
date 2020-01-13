@@ -845,15 +845,18 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
     oversim::BeehiveSuccessorList* succList = dynamic_cast<oversim::BeehiveSuccessorList*>(bOverlay->getParentModule()->getSubmodule("successorList"));
     oversim::BeehiveFingerTable* fingTable = dynamic_cast<oversim::BeehiveFingerTable*>(bOverlay->getParentModule()->getSubmodule("fingerTable"));
 
-    int numFingers = fingTable->getSize();
+
+    int numFingers = succList->getSize();//fingTable->getSize();
+    int minNumReplicatedNodes = 60;
+    int numReplicatedNodes = min(numFingers, minNumReplicatedNodes);
 
     // for each key in successor list...
-    for (uint i = 0; i < fingTable->getSize(); i++) {
+    for (uint i = 0; i < numReplicatedNodes; i++) {
 
         // create message
         BeehiveReplicateCall *repmsg = new BeehiveReplicateCall();
-        repmsg->setDestinationKey(fingTable->getFinger(i).getKey()); 
-	//repmsg->setDestinationKey(succList->getSuccessor(i).getKey()); 
+        //repmsg->setDestinationKey(fingTable->getFinger(i).getKey()); 
+	repmsg->setDestinationKey(succList->getSuccessor(i).getKey()); 
 
         if (dumpVector->size() > 0) {
             repmsg->setReplicatedKeysArraySize(dumpVector->size());
@@ -864,8 +867,8 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
             repmsg->setReplicatedKeysArraySize(0);
         }
         
-        //sendRouteRpcCall(TIER1_COMP, succList->getSuccessor(i).getKey(), repmsg);
-	sendRouteRpcCall(TIER1_COMP, fingTable->getFinger(i).getKey(), repmsg);
+        sendRouteRpcCall(TIER1_COMP, succList->getSuccessor(i).getKey(), repmsg);
+	//sendRouteRpcCall(TIER1_COMP, fingTable->getFinger(i).getKey(), repmsg);
 
 	}
 
@@ -909,7 +912,7 @@ void BeehiveDHT::handleReplicateRequest(BeehiveReplicateCall* replicateRequest)
             for (uint j = 0; j < numKeysStored; j++) {
                 if (incomingData[i].getKey().toString() == currData[j].getKey().toString()) {
                     sharedKeys.push_back(incomingData[i].getKey().toString());
-                } else if (unreplicatedKeys.find(incomingData[i].getKey().toString()) == unreplicatedKeys.end()) {// && currData[j].getResponsible() == true) {
+                } else if (unreplicatedKeys.find(incomingData[i].getKey().toString()) == unreplicatedKeys.end() && currData[j].getResponsible() == true) {
                     unreplicatedKeys.insert(currData[j].getKey().toString());
 						objectsToReplicate.push_back(currData[j]);
                 }
