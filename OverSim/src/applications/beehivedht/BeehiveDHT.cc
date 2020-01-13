@@ -878,6 +878,9 @@ void BeehiveDHT::handleReplicateRequest(BeehiveReplicateCall* replicateRequest)
 {
     BeehiveReplicateCall* rrpc = (BeehiveReplicateCall*) replicateRequest;
 
+    BeehiveReplicateResponse *resprpc = new BeehiveReplicateResponse();
+    resprpc->setRespondingNode(thisNode);
+
     if (rrpc->getReplicatedKeysArraySize() > 0) {
 
 
@@ -901,42 +904,49 @@ void BeehiveDHT::handleReplicateRequest(BeehiveReplicateCall* replicateRequest)
         //      2. list of keys that should be deleted at predecessor (these keys were in the incoming list)
         vector<string> sharedKeys;
         set<string> unreplicatedKeys;
+	vector<DhtDumpEntry> objectsToReplicate;
         for (uint i = 0; i < rrpc->getReplicatedKeysArraySize(); i++) {
             for (uint j = 0; j < numKeysStored; j++) {
                 if (incomingData[i].getKey().toString() == currData[j].getKey().toString()) {
                     sharedKeys.push_back(incomingData[i].getKey().toString());
                 } else if (unreplicatedKeys.find(incomingData[i].getKey().toString()) == unreplicatedKeys.end()) {// && currData[j].getResponsible() == true) {
                     unreplicatedKeys.insert(currData[j].getKey().toString());
+						objectsToReplicate.push_back(currData[j]);
                 }
             }
         }
+	//std::cout << unreplicatedKeys.size();
 
         // get the actual objects to replicate, not just their keys
-        DhtDumpEntry objectsToReplicate[unreplicatedKeys.size()];
-        int objCounter = 0;
-        for (uint i = 0; i < rrpc->getReplicatedKeysArraySize(); i++) {
-        	if (unreplicatedKeys.find(incomingData[i].getKey().toString()) != unreplicatedKeys.end()) {
-        	    objectsToReplicate[objCounter] = incomingData[i];
-        	    objCounter++;
-        	}
-        }
-
-        //if (numKeysStored > 100) {
-    	//std::cout << numKeysStored << " " << unreplicatedKeys.size() << "\n";
+        //DhtDumpEntry objectsToReplicate[unreplicatedKeys.size()];
+	
+	//std::cout << sizeof(objectsToReplicate) << "\n";
+        //uint objCounter = 0;
+        //for (uint i = 0; i < sizeof(currData); i++) {
+        	//if (unreplicatedKeys.find(currData[i].getKey().toString()) != unreplicatedKeys.end()) {
+        	    //objectsToReplicate[objCounter] = currData[i];
+        	    //objCounter++;
+		    //objectsToReplicate.push_back(currData[i]);
+        	//}
         //}
 
-        // TODO: send back both of these lists in the response
-        BeehiveReplicateResponse *resprpc = new BeehiveReplicateResponse();
-        resprpc->setRespondingNode(thisNode);
-        resprpc->setObjectsToReplicateArraySize(unreplicatedKeys.size());
+        //if (numKeysStored > 100) {
+    	//std::cout << unreplicatedKeys.size() << "\n";
+        //}
+	//std::cout << objectsToReplicate.size() << "\n";
 
+
+        // TODO: send back both of these lists in the response
+        resprpc->setObjectsToReplicateArraySize(unreplicatedKeys.size());
 
         for (uint32 i = 0; i < unreplicatedKeys.size(); i++) {
         	resprpc->setObjectsToReplicate(i, objectsToReplicate[i]);
         	DhtDumpEntry currObject = objectsToReplicate[i];
         }
-        sendRpcResponse(rrpc, resprpc);
+        
     }
+    //std::cout << resprpc->getObjectsToReplicateArraySize();
+    sendRpcResponse(rrpc, resprpc);
 }
 
 
@@ -950,7 +960,7 @@ void BeehiveDHT::handleReplicateResponse(BeehiveReplicateResponse* replicateResp
 
     // TODO: store new data (first list)
     int numDataToStore = rrpc->getObjectsToReplicateArraySize();
-    //std::cout << "\n" << numDataToStore << "\n";
+    //std::cout << numDataToStore << "\n";
     vector<DhtDumpEntry> keysActuallyReplicated;
     for (uint i = 0; i < numDataToStore; i++) {
 	DhtDumpEntry currDatum = rrpc->getObjectsToReplicate(i);
@@ -976,6 +986,8 @@ void BeehiveDHT::handleReplicateResponse(BeehiveReplicateResponse* replicateResp
     //std::cout << "\n" << keysActuallyReplicated.size() << "\n";
     // TODO: update routing data
     BeehiveUpdateRoutingCall* beehiveUpdateRoutingCall = new BeehiveUpdateRoutingCall();
+
+    //std::cout << keysActuallyReplicated.size() << "\n";
 
     beehiveUpdateRoutingCall->setNewReplicatedKeysArraySize(keysActuallyReplicated.size());
     set<string> newReplicatedKeysSet;

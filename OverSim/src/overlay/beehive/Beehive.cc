@@ -599,12 +599,12 @@ NodeVector* Beehive::findNode(const OverlayKey& key,
     //std::cout << readReplicated;
     //std::cout << " ";
     //if (overlayReplicatedKeys.size() > 0) {
-	//std::cout << overlayReplicatedKeys.size() << "\n"; //isReplicatedHere(key);
+    //std::cout << overlayReplicatedKeys.size() << "\n"; //isReplicatedHere(key);
     //}
     //std::cout << "\n";
-    if (isReplicatedHere(key)) {
-	std::cout << "REPPPP " << readReplicated << "\n";
-    }
+    //if (isReplicatedHere(key)) {
+	//std::cout << "REPPPP " << readReplicated << "\n";
+    //}
 
 
     if (state != READY)
@@ -625,6 +625,7 @@ NodeVector* Beehive::findNode(const OverlayKey& key,
 
     // if replicated here, the message is for this node
     else if (isReplicatedHere(key) && readReplicated) {
+	std::cout << overlayReplicatedKeys.size();
 	std::cout << "\n\nREPLICATED\n\n";
         nextHop = new NodeVector();
         nextHop->push_back(thisNode);
