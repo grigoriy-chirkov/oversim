@@ -430,7 +430,10 @@ void Beehive::rpcUpdateRouting(BeehiveUpdateRoutingCall* beehiveUpdateRoutingCal
     // remove keys which are deleted
     int numNewKeys = beehiveUpdateRoutingCall->getNewReplicatedKeysArraySize();
     DhtDumpEntry newReplicatedObjects[numNewKeys];
-    //std::cout << numNewKeys << "\n";
+    if (numNewKeys > 0) {
+	//std::cout << "\n\nOMGGGG " << numNewKeys << overlayReplicatedKeys.size() << "\n\n";
+	//std::cout << numNewKeys << "\n";
+    }
 
     for (uint i = 0; i < numNewKeys; i++) {
 	//std::cout << beehiveUpdateRoutingCall->getNewReplicatedKeys(i).getKey().toString();
@@ -439,7 +442,8 @@ void Beehive::rpcUpdateRouting(BeehiveUpdateRoutingCall* beehiveUpdateRoutingCal
 
 
     // notify app tier about success
-    // sendRpcResponse();
+    BeehiveUpdateRoutingResponse *rpcResp = new BeehiveUpdateRoutingResponse();
+    sendRpcResponse(beehiveUpdateRoutingCall, rpcResp);
 }
 
 
@@ -594,12 +598,13 @@ NodeVector* Beehive::findNode(const OverlayKey& key,
     NodeVector* nextHop;
     //std::cout << readReplicated;
     //std::cout << " ";
-    //std::cout << overlayReplicatedKeys.size(); //isReplicatedHere(key);
-    //std::cout << "\n";
-    //if (readReplicated) {
-	//std::cout << "REPPPP";
-	//std::cout << "\n";
+    //if (overlayReplicatedKeys.size() > 0) {
+	//std::cout << overlayReplicatedKeys.size() << "\n"; //isReplicatedHere(key);
     //}
+    //std::cout << "\n";
+    if (isReplicatedHere(key)) {
+	std::cout << "REPPPP " << readReplicated << "\n";
+    }
 
 
     if (state != READY)
@@ -620,7 +625,7 @@ NodeVector* Beehive::findNode(const OverlayKey& key,
 
     // if replicated here, the message is for this node
     else if (isReplicatedHere(key) && readReplicated) {
-	std::cout << "REPLICATED\n";
+	std::cout << "\n\nREPLICATED\n\n";
         nextHop = new NodeVector();
         nextHop->push_back(thisNode);
     }

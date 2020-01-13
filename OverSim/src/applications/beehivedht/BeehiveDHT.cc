@@ -848,11 +848,12 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
     int numFingers = fingTable->getSize();
 
     // for each key in successor list...
-    for (uint i = 0; i < numFingers; i++) {
+    for (uint i = 0; i < fingTable->getSize(); i++) {
 
         // create message
         BeehiveReplicateCall *repmsg = new BeehiveReplicateCall();
         repmsg->setDestinationKey(fingTable->getFinger(i).getKey()); 
+	//repmsg->setDestinationKey(succList->getSuccessor(i).getKey()); 
 
         if (dumpVector->size() > 0) {
             repmsg->setReplicatedKeysArraySize(dumpVector->size());
@@ -863,7 +864,8 @@ void BeehiveDHT::handleReplicateTimerExpired(cMessage* msg)
             repmsg->setReplicatedKeysArraySize(0);
         }
         
-        sendRouteRpcCall(TIER1_COMP, fingTable->getFinger(i).getKey(), repmsg);
+        //sendRouteRpcCall(TIER1_COMP, succList->getSuccessor(i).getKey(), repmsg);
+	sendRouteRpcCall(TIER1_COMP, fingTable->getFinger(i).getKey(), repmsg);
 
 	}
 
@@ -885,6 +887,7 @@ void BeehiveDHT::handleReplicateRequest(BeehiveReplicateCall* replicateRequest)
     // Get the list of keys that live at this node
     BeehiveDHTDumpVector* dumpVector = dataStorage->dumpDht(); // Dumps out all data
     int numKeysStored = dumpVector->size(); // number of keys stored here
+    //std::cout << "\n" << numKeysStored << "\n";	
     DhtDumpEntry currData[numKeysStored]; // list to store keys
     for (uint32_t i = 0; i < numKeysStored; i++) { // fill up the list
         currData[i] = (*dumpVector)[i];
@@ -915,6 +918,10 @@ void BeehiveDHT::handleReplicateRequest(BeehiveReplicateCall* replicateRequest)
     	}
     }
 
+    //if (numKeysStored > 100) {
+	//std::cout << numKeysStored << " " << unreplicatedKeys.size() << "\n";
+    //}
+
     // TODO: send back both of these lists in the response
     BeehiveReplicateResponse *resprpc = new BeehiveReplicateResponse();
     resprpc->setRespondingNode(thisNode);
@@ -939,11 +946,13 @@ void BeehiveDHT::handleReplicateResponse(BeehiveReplicateResponse* replicateResp
 
     // TODO: store new data (first list)
     int numDataToStore = rrpc->getObjectsToReplicateArraySize();
+    //std::cout << "\n" << numDataToStore << "\n";
     vector<DhtDumpEntry> keysActuallyReplicated;
     for (uint i = 0; i < numDataToStore; i++) {
 	DhtDumpEntry currDatum = rrpc->getObjectsToReplicate(i);
         
-	if (currDatum.getKind() != 0) {
+	//if (currDatum.getKind() != 0) {
+	if (!currDatum.getKey().isUnspecified()) { // make sure key is specified
 
 	// create TTL message
 	    BeehiveDHTTtlTimer *timerMsg = new BeehiveDHTTtlTimer("ttl_timer");
@@ -960,6 +969,7 @@ void BeehiveDHT::handleReplicateResponse(BeehiveReplicateResponse* replicateResp
 
     // TODO: delete data that shouldn't be replicated anymore (second list)
 
+    //std::cout << "\n" << keysActuallyReplicated.size() << "\n";
     // TODO: update routing data
     BeehiveUpdateRoutingCall* beehiveUpdateRoutingCall = new BeehiveUpdateRoutingCall();
 
