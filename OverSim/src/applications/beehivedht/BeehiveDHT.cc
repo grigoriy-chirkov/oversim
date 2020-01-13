@@ -878,61 +878,65 @@ void BeehiveDHT::handleReplicateRequest(BeehiveReplicateCall* replicateRequest)
 {
     BeehiveReplicateCall* rrpc = (BeehiveReplicateCall*) replicateRequest;
 
-    // get list of incoming data keys
-    DhtDumpEntry incomingData[rrpc->getReplicatedKeysArraySize()];// = rrpc->getReplicatedKeys();
-    for (uint i = 0; i < rrpc->getReplicatedKeysArraySize(); i++) {
-        incomingData[i] = rrpc->getReplicatedKeys(i);
-    }
+    if (rrpc->getReplicatedKeysArraySize() > 0) {
 
-    // Get the list of keys that live at this node
-    BeehiveDHTDumpVector* dumpVector = dataStorage->dumpDht(); // Dumps out all data
-    int numKeysStored = dumpVector->size(); // number of keys stored here
-    //std::cout << "\n" << numKeysStored << "\n";	
-    DhtDumpEntry currData[numKeysStored]; // list to store keys
-    for (uint32_t i = 0; i < numKeysStored; i++) { // fill up the list
-        currData[i] = (*dumpVector)[i];
-    }
 
-    // compare incoming key list to the keys stored at this node, and store two list:
-    //      1. list of keys that should be replicated at predecessor (these keys weren't in the incoming list)
-    //      2. list of keys that should be deleted at predecessor (these keys were in the incoming list)
-    vector<string> sharedKeys;
-    set<string> unreplicatedKeys;
-    for (uint i = 0; i < rrpc->getReplicatedKeysArraySize(); i++) {
-        for (uint j = 0; j < numKeysStored; j++) {
-            if (incomingData[i].getKey().toString() == currData[j].getKey().toString()) {
-                sharedKeys.push_back(incomingData[i].getKey().toString());
-            } else if (unreplicatedKeys.find(incomingData[i].getKey().toString()) == unreplicatedKeys.end()) {// && currData[j].getResponsible() == true) {
-                unreplicatedKeys.insert(currData[j].getKey().toString());
+        // get list of incoming data keys
+        DhtDumpEntry incomingData[rrpc->getReplicatedKeysArraySize()];// = rrpc->getReplicatedKeys();
+        for (uint i = 0; i < rrpc->getReplicatedKeysArraySize(); i++) {
+            incomingData[i] = rrpc->getReplicatedKeys(i);
+        }
+
+        // Get the list of keys that live at this node
+        BeehiveDHTDumpVector* dumpVector = dataStorage->dumpDht(); // Dumps out all data
+        int numKeysStored = dumpVector->size(); // number of keys stored here
+        //std::cout << "\n" << numKeysStored << "\n";	
+        DhtDumpEntry currData[numKeysStored]; // list to store keys
+        for (uint32_t i = 0; i < numKeysStored; i++) { // fill up the list
+            currData[i] = (*dumpVector)[i];
+        }
+
+        // compare incoming key list to the keys stored at this node, and store two list:
+        //      1. list of keys that should be replicated at predecessor (these keys weren't in the incoming list)
+        //      2. list of keys that should be deleted at predecessor (these keys were in the incoming list)
+        vector<string> sharedKeys;
+        set<string> unreplicatedKeys;
+        for (uint i = 0; i < rrpc->getReplicatedKeysArraySize(); i++) {
+            for (uint j = 0; j < numKeysStored; j++) {
+                if (incomingData[i].getKey().toString() == currData[j].getKey().toString()) {
+                    sharedKeys.push_back(incomingData[i].getKey().toString());
+                } else if (unreplicatedKeys.find(incomingData[i].getKey().toString()) == unreplicatedKeys.end()) {// && currData[j].getResponsible() == true) {
+                    unreplicatedKeys.insert(currData[j].getKey().toString());
+                }
             }
         }
+
+        // get the actual objects to replicate, not just their keys
+        DhtDumpEntry objectsToReplicate[unreplicatedKeys.size()];
+        int objCounter = 0;
+        for (uint i = 0; i < rrpc->getReplicatedKeysArraySize(); i++) {
+        	if (unreplicatedKeys.find(incomingData[i].getKey().toString()) != unreplicatedKeys.end()) {
+        	    objectsToReplicate[objCounter] = incomingData[i];
+        	    objCounter++;
+        	}
+        }
+
+        //if (numKeysStored > 100) {
+    	//std::cout << numKeysStored << " " << unreplicatedKeys.size() << "\n";
+        //}
+
+        // TODO: send back both of these lists in the response
+        BeehiveReplicateResponse *resprpc = new BeehiveReplicateResponse();
+        resprpc->setRespondingNode(thisNode);
+        resprpc->setObjectsToReplicateArraySize(unreplicatedKeys.size());
+
+
+        for (uint32 i = 0; i < unreplicatedKeys.size(); i++) {
+        	resprpc->setObjectsToReplicate(i, objectsToReplicate[i]);
+        	DhtDumpEntry currObject = objectsToReplicate[i];
+        }
+        sendRpcResponse(rrpc, resprpc);
     }
-
-    // get the actual objects to replicate, not just their keys
-    DhtDumpEntry objectsToReplicate[unreplicatedKeys.size()];
-    int objCounter = 0;
-    for (uint i = 0; i < rrpc->getReplicatedKeysArraySize(); i++) {
-    	if (unreplicatedKeys.find(incomingData[i].getKey().toString()) != unreplicatedKeys.end()) {
-    	    objectsToReplicate[objCounter] = incomingData[i];
-    	    objCounter++;
-    	}
-    }
-
-    //if (numKeysStored > 100) {
-	//std::cout << numKeysStored << " " << unreplicatedKeys.size() << "\n";
-    //}
-
-    // TODO: send back both of these lists in the response
-    BeehiveReplicateResponse *resprpc = new BeehiveReplicateResponse();
-    resprpc->setRespondingNode(thisNode);
-    resprpc->setObjectsToReplicateArraySize(unreplicatedKeys.size());
-
-
-    for (uint32 i = 0; i < unreplicatedKeys.size(); i++) {
-    	resprpc->setObjectsToReplicate(i, objectsToReplicate[i]);
-    	DhtDumpEntry currObject = objectsToReplicate[i];
-    }
-    sendRpcResponse(rrpc, resprpc);
 }
 
 
